@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://www.pixiv.net/artworks/142405299">
-    <img src="https://pixiv.cat/142405299.jpg" alt="雨一直下Lv999 - MadYY" width="600">
+    <img src="assets/cover.png" alt="雨一直下Lv999 - MadYY" width="600">
   </a>
   <br>
   <em>Illustration by <a href="https://www.pixiv.net/en/users/118065">MadYY</a> — 「雨一直下Lv999」</em>
