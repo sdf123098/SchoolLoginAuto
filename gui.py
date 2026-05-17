@@ -27,6 +27,10 @@ class CampusLoginGUI:
         save_config: Callable[[dict], None],
         get_auto_start: Callable[[], bool],
         set_auto_start: Callable[[bool], None],
+        get_bypass_proxy: Callable[[], bool],
+        set_bypass_proxy: Callable[[bool], None],
+        get_verify_ssl: Callable[[], bool],
+        set_verify_ssl: Callable[[bool], None],
         clear_all_credentials: Callable[[], None],
     ):
         self.on_login = on_login
@@ -46,6 +50,10 @@ class CampusLoginGUI:
         self.save_config = save_config
         self.get_auto_start = get_auto_start
         self.set_auto_start = set_auto_start
+        self.get_bypass_proxy = get_bypass_proxy
+        self.set_bypass_proxy = set_bypass_proxy
+        self.get_verify_ssl = get_verify_ssl
+        self.set_verify_ssl = set_verify_ssl
         self.clear_all_credentials = clear_all_credentials
 
         self.root = tk.Tk()
@@ -94,9 +102,18 @@ class CampusLoginGUI:
         self.lbl_online_status = ttk.Label(card, text="", font=("", 12))
         self.lbl_online_status.pack(pady=2)
 
+        # 账号选择
+        acct_frame = ttk.Frame(f)
+        acct_frame.grid(row=1, column=0, padx=15, pady=(10, 0), sticky="ew")
+        ttk.Label(acct_frame, text="登录账号:").pack(side="left", padx=3)
+        self.login_account_var = tk.StringVar()
+        self.login_account_combo = ttk.Combobox(acct_frame, textvariable=self.login_account_var, state="readonly", width=28)
+        self.login_account_combo.pack(side="left", padx=3)
+        self.login_account_combo.bind("<<ComboboxSelected>>", self._on_login_account_selected)
+
         # 登录按钮区
         btn_frame = ttk.Frame(f)
-        btn_frame.grid(row=1, column=0, padx=15, pady=10)
+        btn_frame.grid(row=2, column=0, padx=15, pady=10)
 
         self.btn_login = ttk.Button(btn_frame, text="立即登录", command=self._do_login, width=14)
         self.btn_login.pack(side="left", padx=8)
@@ -109,7 +126,7 @@ class CampusLoginGUI:
 
         # 当前账号与 profile 信息
         info = ttk.LabelFrame(f, text="当前配置", padding=10)
-        info.grid(row=2, column=0, padx=15, pady=10, sticky="ew")
+        info.grid(row=3, column=0, padx=15, pady=10, sticky="ew")
 
         self.lbl_current_account = ttk.Label(info, text="账号: 未选择")
         self.lbl_current_account.pack(anchor="w", pady=2)
@@ -122,19 +139,20 @@ class CampusLoginGUI:
 
     def _login_thread(self):
         try:
+            account_name = self.login_account_var.get().strip()
+            if not account_name:
+                self.root.after(0, lambda: messagebox.showwarning("提示", "请先选择登录账号。"))
+                return
+
             accounts = self.get_accounts()
-            config = self.get_config()
-            default_name = config.get("default_account", "")
             account = None
             for a in accounts:
-                if a["name"] == default_name:
+                if a["name"] == account_name:
                     account = a
                     break
-            if not account and accounts:
-                account = accounts[0]
 
             if not account:
-                self.root.after(0, lambda: messagebox.showwarning("提示", "没有可用的账号，请先添加账号。"))
+                self.root.after(0, lambda: messagebox.showwarning("提示", "未找到选中的账号，请刷新账号列表。"))
                 return
 
             result = self.on_login(account["name"], account["username"])
@@ -171,6 +189,24 @@ class CampusLoginGUI:
             self._update_status_display(status)
         except Exception as e:
             self.lbl_campus_status.config(text=f"检测异常: {e}")
+
+    def _on_login_account_selected(self, event=None):
+        pass  # 仅用于记录选择，实际登录时读取
+
+    def _refresh_account_combo(self):
+        accounts = self.get_accounts()
+        names = [a["name"] for a in accounts]
+        self.login_account_combo["values"] = names
+        # 默认选中之前的账号，或默认账号，或第一个
+        current = self.login_account_var.get()
+        if current and current in names:
+            return
+        config = self.get_config()
+        default_name = config.get("default_account", "")
+        if default_name in names:
+            self.login_account_var.set(default_name)
+        elif names:
+            self.login_account_var.set(names[0])
 
     def _update_status_display(self, status: dict):
         on_campus = status.get("on_campus", False)
@@ -221,6 +257,7 @@ class CampusLoginGUI:
         for a in self.get_accounts():
             default_mark = "✓" if a.get("is_default") else ""
             self.account_tree.insert("", "end", values=(a["name"], a["username"], default_mark))
+        self._refresh_account_combo()
 
     def _add_account_dialog(self):
         dlg = _AccountDialog(self.root, "添加账号")
@@ -411,6 +448,18 @@ class CampusLoginGUI:
         self.auto_login_var = tk.BooleanVar(value=self.get_config().get("auto_login", True))
         ttk.Checkbutton(row3, text="检测到需要登录时自动登录", variable=self.auto_login_var, command=self._save_settings).pack(anchor="w")
 
+        # 代理屏蔽
+        row4 = ttk.Frame(f)
+        row4.grid(row=4, column=0, sticky="ew", padx=15, pady=8)
+        self.bypass_proxy_var = tk.BooleanVar(value=self.get_bypass_proxy())
+        ttk.Checkbutton(row4, text="绕过所有代理 (忽略系统代理/环境变量代理)", variable=self.bypass_proxy_var, command=self._toggle_bypass_proxy).pack(anchor="w")
+
+        # SSL 证书验证
+        row5 = ttk.Frame(f)
+        row5.grid(row=5, column=0, sticky="ew", padx=15, pady=8)
+        self.verify_ssl_var = tk.BooleanVar(value=self.get_verify_ssl())
+        ttk.Checkbutton(row5, text="验证 SSL 证书 (校园网环境通常需要关闭)", variable=self.verify_ssl_var, command=self._toggle_verify_ssl).pack(anchor="w")
+
         # 危险操作
         danger = ttk.LabelFrame(f, text="危险操作", padding=10)
         danger.grid(row=10, column=0, sticky="ew", padx=15, pady=15)
@@ -436,6 +485,14 @@ class CampusLoginGUI:
             self.append_log("[设置] 已启用开机自启")
         else:
             self.append_log("[设置] 已禁用开机自启")
+
+    def _toggle_bypass_proxy(self):
+        enabled = self.bypass_proxy_var.get()
+        self.set_bypass_proxy(enabled)
+
+    def _toggle_verify_ssl(self):
+        enabled = self.verify_ssl_var.get()
+        self.set_verify_ssl(enabled)
 
     def _clear_all_creds(self):
         if messagebox.askyesno("警告", "确定要清除所有保存的账号凭据吗？此操作不可撤销。"):
@@ -482,6 +539,7 @@ class CampusLoginGUI:
     # ===== 全局刷新 =====
     def _refresh_all(self):
         self._refresh_accounts()
+        self._refresh_account_combo()
         self._refresh_profiles()
         self._on_profile_selected()
         # 更新配置相关控件
@@ -490,6 +548,8 @@ class CampusLoginGUI:
         self.auto_login_var.set(config.get("auto_login", True))
         self.start_minimized_var.set(config.get("start_minimized", True))
         self.auto_start_var.set(self.get_auto_start())
+        self.bypass_proxy_var.set(self.get_bypass_proxy())
+        self.verify_ssl_var.set(self.get_verify_ssl())
         # 更新仪表盘信息
         cur = self.get_current_profile()
         self.lbl_current_profile.config(text=f"Profile: {cur.get('name', '未选择')}" if cur else "Profile: 未选择")

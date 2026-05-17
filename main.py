@@ -50,6 +50,11 @@ class App:
         # 加载当前 profile
         self._apply_current_profile()
 
+        # 加载 bypass_proxy / verify_ssl 设置
+        config = self.profile_mgr.load_config()
+        self._set_bypass_proxy(config.get("bypass_proxy", False))
+        self._set_verify_ssl(config.get("verify_ssl", False))
+
         # GUI
         self.gui = CampusLoginGUI(
             on_login=self._login,
@@ -69,6 +74,10 @@ class App:
             save_config=self.profile_mgr.save_config,
             get_auto_start=auto_start_enabled,
             set_auto_start=self._set_auto_start,
+            get_bypass_proxy=lambda: self.profile_mgr.load_config().get("bypass_proxy", False),
+            set_bypass_proxy=self._set_bypass_proxy,
+            get_verify_ssl=lambda: self.profile_mgr.load_config().get("verify_ssl", False),
+            set_verify_ssl=self._set_verify_ssl,
             clear_all_credentials=self.credential_mgr.clear_all,
         )
 
@@ -93,13 +102,34 @@ class App:
             self.login_handler.set_profile(profile)
 
     def _set_current_profile_name(self, filename: str):
-        self._apply_current_profile()
+        profile = self.profile_mgr.get_profile(filename)
+        if profile:
+            self.network_checker.set_profile(profile)
+            self.login_handler.set_profile(profile)
 
     def _set_auto_start(self, enabled: bool):
         if enabled:
             auto_start_enable()
         else:
             auto_start_disable()
+
+    def _set_bypass_proxy(self, enabled: bool):
+        self.network_checker.set_bypass_proxy(enabled)
+        self.login_handler.set_bypass_proxy(enabled)
+        config = self.profile_mgr.load_config()
+        config["bypass_proxy"] = enabled
+        self.profile_mgr.save_config(config)
+        if hasattr(self, "gui"):
+            self.gui.append_log(f"[代理] {'已屏蔽' if enabled else '已恢复'}系统代理")
+
+    def _set_verify_ssl(self, enabled: bool):
+        self.network_checker.set_verify_ssl(enabled)
+        self.login_handler.set_verify_ssl(enabled)
+        config = self.profile_mgr.load_config()
+        config["verify_ssl"] = enabled
+        self.profile_mgr.save_config(config)
+        if hasattr(self, "gui"):
+            self.gui.append_log(f"[SSL] {'已启用' if enabled else '已禁用'}SSL证书验证")
 
     # --- 桥接 GUI/托盘 到业务逻辑 ---
     def _login(self, account_name: str, username: str) -> dict:
@@ -196,9 +226,13 @@ class App:
     def _shutdown(self):
         self._running = False
         self.gui.append_log("[退出] 程序正在退出...")
+        self.tray.stop()
+        # Tkinter 操作必须在主线程执行，用 after 投递到主线程
+        self.gui.root.after(0, self._do_exit)
+
+    def _do_exit(self):
         self.gui.quit()
         self.gui.destroy()
-        self.tray.stop()
         os._exit(0)
 
 

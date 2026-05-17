@@ -66,7 +66,9 @@ class ProfileManager:
             "check_interval_seconds": 30,
             "auto_login": True,
             "default_account": "",
-            "start_minimized": True
+            "start_minimized": True,
+            "bypass_proxy": False,
+            "verify_ssl": False
         }
         if os.path.isfile(self.config_path):
             try:

@@ -1,55 +1,46 @@
 {
   "name": "汕头大学 (STU)",
-  "description": "汕头大学校园网认证，支持 IPv4 (a.stu.edu.cn) 和 IPv6 (6.stu.edu.cn)",
+  "description": "汕头大学校园网认证 Dr.COM 6.x ac_portal",
   "detect": {
     "dns_domains": ["a.stu.edu.cn"],
-    "test_url": "http://a.stu.edu.cn/",
-    "offline_keywords": ["login", "portal", "认证"],
-    "online_keywords": ["success", "已在线", "online"]
+    "test_url": "https://a.stu.edu.cn/",
+    "offline_keywords": ["ac_portal", "login", "portal", "认证", "pwdLogin"],
+    "online_keywords": ["success", "已在线", "online", "注销"]
   },
   "login": {
     "method": "POST",
-    "url": "http://a.stu.edu.cn/eportal/InterFace.do?method=login",
+    "url": "https://a.stu.edu.cn/ac_portal/login.php",
     "params": {
-      "userId": "{username}",
-      "password": "{password}",
-      "service": "internet",
-      "queryString": "wlanuserip%3D{wlan_ip}",
-      "operatorPwd": "",
-      "operatorUserId": "",
-      "validcode": "",
-      "passwordEncrypt": "false"
+      "opr": "pwdLogin",
+      "userName": "{username}",
+      "pwd": "{password}",
+      "ipv4or6": "",
+      "rememberPwd": "1"
     },
     "headers": {
-      "Content-Type": "application/x-www-form-urlencoded"
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "X-Requested-With": "XMLHttpRequest"
     },
-    "success_keywords": ["success", "successful", "认证成功"],
+    "success_keywords": ["success", "successful", "认证成功", "登录成功"],
     "failure_keywords": ["fail", "error", "密码错误", "账号不存在"],
     "encoding": "utf-8"
   },
   "ipv6_login": {
-    "enabled": true,
+    "enabled": false,
     "method": "POST",
-    "url": "http://6.stu.edu.cn/eportal/InterFace.do?method=login",
-    "params": {
-      "userId": "{username}",
-      "password": "{password}",
-      "service": "internet",
-      "queryString": "wlanuserip%3D{wlan_ip}",
-      "operatorPwd": "",
-      "operatorUserId": "",
-      "validcode": "",
-      "passwordEncrypt": "false"
-    },
-    "headers": {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    "success_keywords": ["success", "successful"]
+    "url": "",
+    "params": {},
+    "headers": {}
   },
   "logout": {
     "method": "POST",
-    "url": "http://a.stu.edu.cn/eportal/InterFace.do?method=logout",
-    "params": {},
-    "headers": {}
+    "url": "https://a.stu.edu.cn/ac_portal/login.php",
+    "params": {
+      "opr": "pwdLogout"
+    },
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "X-Requested-With": "XMLHttpRequest"
+    }
   }
 }

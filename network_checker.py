@@ -3,16 +3,32 @@ import time
 from typing import Optional
 
 import requests
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class NetworkChecker:
     def __init__(self, profile: Optional[dict] = None):
         self.profile = profile or {}
+        self._bypass_proxy = False
         self._session = requests.Session()
-        self._session.timeout = 5
+        self._session.verify = False
+        self._session.headers["User-Agent"] = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
 
     def set_profile(self, profile: dict):
         self.profile = profile
+
+    def set_bypass_proxy(self, enabled: bool):
+        self._bypass_proxy = enabled
+        self._session.trust_env = not enabled
+
+    def set_verify_ssl(self, enabled: bool):
+        self._session.verify = enabled
 
     def _dns_resolve(self, domain: str) -> bool:
         try:
