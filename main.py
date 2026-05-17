@@ -37,9 +37,11 @@ def get_builtin_profiles_dir() -> str:
 
 
 class App:
-    def __init__(self):
+    def __init__(self, auto_exit_on_login: bool = False):
         self.data_dir = get_data_dir()
         self.profiles_dir = get_builtin_profiles_dir()
+        self._auto_exit_on_login = auto_exit_on_login
+        self._first_login_completed = False
 
         # 核心模块
         self.profile_mgr = ProfileManager(self.data_dir, self.profiles_dir)
@@ -141,6 +143,10 @@ class App:
         if result["success"]:
             self.tray.update_icon("#27AE60")
             self.tray.notify("登录成功", f"账号 {account_name} 已登录")
+            if self._auto_exit_on_login and not self._first_login_completed:
+                self._first_login_completed = True
+                self.gui.append_log("[自动] 首次登录成功，程序即将退出")
+                self.gui.root.after(2000, self._shutdown)
         return result
 
     def _logout(self) -> dict:
@@ -244,7 +250,7 @@ def main():
         # 覆盖配置，以隐藏方式启动
         pass
 
-    app = App()
+    app = App(auto_exit_on_login=start_minimized)
     if start_minimized:
         app.gui.hide()
     app.run()

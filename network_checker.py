@@ -59,12 +59,15 @@ class NetworkChecker:
             return False
 
         try:
-            resp = self._session.get(test_url, timeout=5, allow_redirects=True)
+            # 先不跟随重定向：3xx 通常表示已登录（portal 重定向到原始目标）
+            resp = self._session.get(test_url, timeout=5, allow_redirects=False)
+            if resp.status_code in (301, 302, 303, 307, 308):
+                return False
+
             text = resp.text.lower()
-            # 检查是否包含需要登录的关键词
             for kw in offline_keywords:
                 if kw.lower() in text:
-                    # 同时检查不在线
+                    # 检查是否已有在线标识
                     for okw in online_keywords:
                         if okw.lower() in text:
                             return False
