@@ -1,0 +1,41 @@
+{
+  "name": "城市热点通用 (Dr.COM Generic)",
+  "description": "城市热点 Dr.COM 认证系统通用配置，使用 DDDDD/upass 参数",
+  "detect": {
+    "dns_domains": [],
+    "test_url": "http://1.1.1.1/",
+    "offline_keywords": ["drcom", "portal", "redirect", "认证"],
+    "online_keywords": ["success", "ok"]
+  },
+  "login": {
+    "method": "POST",
+    "url": "http://1.1.1.1/drcom/login",
+    "params": {
+      "callback": "dr1003",
+      "DDDDD": "{username}",
+      "upass": "{password}",
+      "0MKKey": "123456"
+    },
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "success_keywords": ["success", "ok"],
+    "failure_keywords": ["fail", "error", "密码错误"],
+    "encoding": "gbk"
+  },
+  "ipv6_login": {
+    "enabled": false,
+    "method": "POST",
+    "url": "",
+    "params": {},
+    "headers": {}
+  },
+  "logout": {
+    "method": "GET",
+    "url": "http://1.1.1.1/drcom/logout",
+    "params": {
+      "callback": "dr1003"
+    },
+    "headers": {}
+  }
+}
