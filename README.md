@@ -6,6 +6,12 @@
   <em>Illustration by <a href="https://www.pixiv.net/en/users/118065">MadYY</a> — 「雨一直下Lv999」</em>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2B-lightgrey.svg" alt="Windows 10+">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License">
+</p>
+
 ---
 
 # 校园网自动登录 · Campus Auto Login
@@ -138,6 +144,13 @@ SchoolLogin/
 | `pystray` | 系统托盘 |
 | `Pillow` | 托盘图标绘制 |
 | `pywin32` | Windows API (开机自启) |
+
+## 最近更新
+
+**2026-05-17**
+- 修复校园网 HTTPS 自签名证书导致连接失败的问题，新增 SSL 证书验证开关
+- 优化网络检测逻辑：优先用 HTTP 重定向 (3xx) 判断在线状态，避免跟随重定向后页面关键词误判
+- 修复 `--hidden` 模式首次登录成功后未自动退出的问题
 
 ## 许可
 
